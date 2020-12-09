@@ -15,15 +15,6 @@ def long_operation_thread():
 
     HOME = 'C:/Program Files/InstagramDownloader'
 
-    if os.path.isfile(os.path.join(HOME, f'Config/HOME_FOLDER.txt')) == False:
-        with open(os.path.join(HOME, f'Config/HOME_FOLDER.txt'), 'w') as f:
-            f.write('C:/Program Files/InstagramDownloader')
-
-    with open(os.path.join(HOME, f'Config/HOME_FOLDER.txt'), 'r') as f:
-        HOME = f.read().strip()
-
-    print(f'Home folder root is set to {HOME}. You can always change your settings here.')
-
     L = instaloader.Instaloader()
 
     if os.path.isdir(HOME) == False:
@@ -37,6 +28,24 @@ def long_operation_thread():
 
     if os.path.isdir(os.path.join(HOME,'Login')) == False:
         os.mkdir(os.path.join(HOME,'Login'))
+
+    if os.path.isfile(os.path.join(HOME, f'Config/HOME_FOLDER.txt')) == False:
+        with open(os.path.join(HOME, f'Config/HOME_FOLDER.txt'), 'w') as f:
+            f.write('C:/Program Files/InstagramDownloader')
+
+    with open(os.path.join(HOME, f'Config/HOME_FOLDER.txt'), 'r') as f:
+        HOME = f.read().strip()
+
+    if os.path.isdir(os.path.join(HOME,'Posts')) == False:
+        os.mkdir(os.path.join(HOME,'Posts'))
+
+    if os.path.isdir(os.path.join(HOME,'Config')) == False:
+        os.mkdir(os.path.join(HOME,'Config'))
+
+    if os.path.isdir(os.path.join(HOME,'Login')) == False:
+        os.mkdir(os.path.join(HOME,'Login'))
+
+    print(f'Home folder root is set to {HOME}. You can always change your settings here.')
 
     if os.path.isfile(os.path.join(HOME, f'Config/usernames.txt')) == False:
         with open(os.path.join(HOME, f'Config/usernames.txt'), 'w') as f:
