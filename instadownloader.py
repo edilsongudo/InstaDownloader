@@ -15,7 +15,7 @@ def long_operation_thread():
 
     HOME = 'C:/Program Files/InstagramDownloader'
 
-    L = instaloader.Instaloader()
+    L = instaloader.Instaloader(download_pictures=False, download_video_thumbnails=False, download_geotags=False, download_comments=False, compress_json=False)
 
     if os.path.isdir(HOME) == False:
         os.mkdir(HOME)
@@ -67,6 +67,10 @@ def long_operation_thread():
         with open(os.path.join(HOME, f'Config/ALLOW_VIDEO.txt'), 'w') as f:
             f.write('true')
 
+    if os.path.isfile(os.path.join(HOME, f'Config/ONLY_VIDEOS.txt')) == False:
+        with open(os.path.join(HOME, f'Config/ONLY_VIDEOS.txt'), 'w') as f:
+            f.write('false')
+
     if os.path.isfile(os.path.join(HOME, f'Config/SINCE.txt')) == False:
         with open(os.path.join(HOME, f'Config/SINCE.txt'), 'w') as f:
             f.write('2020-11-04')
@@ -95,10 +99,18 @@ def long_operation_thread():
     with open(os.path.join(HOME, f'Config/SLEEP_SECONDS_PER_DOWNLOAD.txt'), 'r') as f:
         SLEEPTIME = int(f.read().strip())
 
-    print(f'Sleep time betwwen downloads is set to {SLEEPTIME}.')
+    print(f'Sleep time betwwen downloads is set to {SLEEPTIME} seconds.')
 
     with open(os.path.join(HOME, f'Config/ALLOW_VIDEO.txt'), 'r') as f:
         ALLOW_VIDEO = f.read().lower().strip()
+
+    with open(os.path.join(HOME, f'Config/ONLY_VIDEOS.txt'), 'r') as f:
+        ONLY_VIDEOS = f.read().lower().strip()
+
+    if ONLY_VIDEOS == 'true':
+        print('Images will not be downloaded because only videos is set to "true".')
+    else:
+        print(f'Only videos is set to {ONLY_VIDEOS}. You can set only "true" or "false".')
 
     print(f'Allow video is set to {ALLOW_VIDEO}. You can set only "true" or "false".')
 
@@ -106,7 +118,7 @@ def long_operation_thread():
         USERNAME = f.read().lower().strip()
 
     with open(os.path.join(HOME, f'Login/account_password.txt'), 'r') as f:
-        PASSWORD = f.read().lower().strip()
+        PASSWORD = f.read().strip()
 
     with open(os.path.join(HOME, f'Login/LOGIN.txt'), 'r') as f:
         LOGIN = f.read().lower()
@@ -127,11 +139,16 @@ def long_operation_thread():
                 posts.append(post)
 
             matches = []
+            post_is_video = []
             for post in posts:
                 post_date = datetime.strftime(post.date, '%Y-%m-%d %H %M %S')
                 if post_date < UNTIL and post_date > SINCE:
                     matches.append(post)
-            print(f"{len(matches)} {username}' posts found between {SINCE} and {UNTIL}")
+
+                    if post.is_video == True:
+                        post_is_video.append(post)
+
+            print(f"{len(matches)} {username}' posts found between {SINCE} and {UNTIL} and {len(post_is_video)} are videos.")
 
             n = 1
             for post in posts:
@@ -142,68 +159,33 @@ def long_operation_thread():
                     
                     if post.is_video == True:
                         if ALLOW_VIDEO != 'false':
-                            ext = '.mp4'
-                            filename = f'{post.owner_username}_{post_date}{ext}'
-                            if os.path.isfile(os.path.join(HOME, f'Posts/{filename}')) == False:    
-                                url = f'https://www.instagram.com/p/{post.shortcode}'
-                                x = re.match(r'^(https:)[/][/]www.([^/]+[.])*instagram.com', url)
-
-                                try:
-                                    if x:
-                                        request_image = requests.get(url)
-                                        src = request_image.content.decode('utf-8')
-                                        check_type = re.search(r'<meta name="medium" content=[\'"]?([^\'" >]+)', src)
-                                        check_type_f = check_type.group()
-                                        final = re.sub('<meta name="medium" content="', '', check_type_f)
-
-                                        if final == "video": 
-                                            msg = 'yes'
-
-                                            if msg == "yes":
-                                                print("Downloading the video...")
-                                                extract_video_link = re.search(r'meta property="og:video" content=[\'"]?([^\'" >]+)', src)
-                                                video_link = extract_video_link.group()
-                                                final = re.sub('meta property="og:video" content="', '', video_link)
-                                                _response = requests.get(final).content
-                                                file_size_request = requests.get(final, stream=True)
-                                                file_size = int(file_size_request.headers['Content-Length'])
-                                                block_size = 1024 
-                                                # filename = f'{post.owner_username}_{post_date}{ext}'
-                                                # while os.path.isfile(os.path.join(HOME, f'Posts/{filename}')) == True:
-                                                #     filename = f'{post.owner_username}_{post_date}({str(z)}){ext}'
-                                                #     z += 1
-                                                t=tqdm(total=file_size, unit='B', unit_scale=True, desc=filename, ascii=True)
-                                                with open(f'{os.path.join(HOME,"Posts/")}{filename}', 'wb') as f:
-                                                    for data in file_size_request.iter_content(block_size):
-                                                        t.update(len(data))
-                                                        f.write(data)
-                                                t.close()
-                                                print("Video downloaded successfully")
-                                                n += 1
-                                                sleep(SLEEPTIME)
-                                except Exception as e:
-                                    print(e)
-                            else:
-                                print(f'{filename} already downloaded')
+                            try:
+                                os.chdir(os.path.join(HOME,'Posts'))
+                            except:
+                                pass
+                            L.download_post(post, username)
                         else:
                             print('ALLOW_VIDEO.txt is set to "false". Set it to "true" to enable it')
 
                     else:
-                        ext = '.jpg'
-                        filename = f'{post.owner_username}_{post_date}{ext}'
-                        if os.path.isfile(os.path.join(HOME, f'Posts/{filename}')) == False:
-                            # while os.path.isfile(os.path.join(HOME, f'Posts/{filename}')) == True:
-                            #     filename = f'{post.owner_username}_{post_date}({str(z)}){ext}'
-                            #     z += 1
-                            r = requests.get(post.url)
-                            print(f'Downloading post {n} www.instagram.com/p/{post.shortcode}')
-                            with open(f'{os.path.join(HOME,"Posts/")}{filename}', 'wb') as file:
-                                file.write(r.content)
-                                print('Download Done.')
-                                n += 1
-                                sleep(SLEEPTIME)
+                        if ONLY_VIDEOS != 'true':
+                            ext = '.jpg'
+                            filename = f'{post.owner_username}_{post_date}{ext}'
+                            if os.path.isfile(os.path.join(HOME, f'Posts/{filename}')) == False:
+                                # while os.path.isfile(os.path.join(HOME, f'Posts/{filename}')) == True:
+                                #     filename = f'{post.owner_username}_{post_date}({str(z)}){ext}'
+                                #     z += 1
+                                r = requests.get(post.url)
+                                print(f'Downloading post {n} www.instagram.com/p/{post.shortcode}')
+                                with open(f'{os.path.join(HOME,"Posts/")}{filename}', 'wb') as file:
+                                    file.write(r.content)
+                                    print('Download Done.')
+                                    n += 1
+                                    sleep(SLEEPTIME)
+                            else:
+                                print(f'{filename} already downloaded.')
                         else:
-                            print(f'{filename} already downloaded.')                    
+                            pass                    
                 else:
                     pass
 
@@ -211,7 +193,6 @@ def long_operation_thread():
             print(e)
           
     print('Finished')
-
                     
 def the_gui():
 
