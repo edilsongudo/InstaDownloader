@@ -1,0 +1,9 @@
+instaloader==4.5.4
+lxml==4.5.0
+m3u8==0.7.1
+PySimpleGUI==4.28.0
+requests==2.22.0
+requests-html==0.10.0
+tqdm==4.50.0
+
+
